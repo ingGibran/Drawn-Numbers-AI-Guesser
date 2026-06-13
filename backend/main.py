@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, APIRouter
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 import torch
@@ -9,6 +10,7 @@ from torchvision import transforms
 
 from PIL import Image 
 import io 
+import os
 
 app = FastAPI(title="Number Guesser API")
 
@@ -20,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-router = APIRouter()
 
 '''
 Define Transform to manipulate data
@@ -59,9 +60,21 @@ model.load_state_dict(torch.load("model/mnist_model.pth", map_location=device, w
 model.eval()
 
 '''
+Deploy settings
+'''
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+frontend_dir = os.path.join(base_dir, "frontend")
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+
+'''
 API
 '''
-@router.post("/predict/")
+@app.get("/")
+async def serve_ui():
+    return FileResponse(os.path.join(frontend_dir, "index.html"))
+
+@app.post("/predict/")
 async def predict_digit(file: UploadFile = File(...)):
     try:
         image_bytes = await file.read() 
@@ -77,5 +90,3 @@ async def predict_digit(file: UploadFile = File(...)):
     
     except Exception as e:
         return JSONResponse(status_code=400, content={"message": f"Error processing image: {str(e)}"})
-
-app.include_router(router)
