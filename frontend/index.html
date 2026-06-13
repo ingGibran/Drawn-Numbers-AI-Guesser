@@ -123,26 +123,61 @@
             box-shadow: 5px 5px 0px rgba(0, 0, 0, 0.15);
         }
 
-        .controls {
+        .control-panel {
+            display: flex;
+            gap: 15px;
             margin-top: 25px;
         }
 
-        button {
-            padding: 10px 24px;
-            font-size: 24px;
+        .crayon-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            font-size: 20px;
             font-family: 'Patrick Hand', cursive;
             cursor: pointer;
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            border: 4px solid #8e241b;
-            border-radius: 10px 25px 15px 20px / 20px 10px 25px 15px;
+            border: 4px solid #2c3e50;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
             box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.15);
             transition: transform 0.1s, box-shadow 0.1s;
+            min-width: 80px;
         }
 
-        button:active {
+        .crayon-btn:active {
             transform: scale(0.95) rotate(-3deg);
             box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-pencil {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border-color: #1e8449;
+        }
+
+        .btn-eraser {
+            background: linear-gradient(135deg, #85c1e9, #3498db);
+            color: white;
+            border-color: #21618c;
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border-color: #943126;
+        }
+
+        .crayon-btn.active-mode {
+            border-color: #2c3e50;
+            box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5) inset;
+            transform: scale(0.95) rotate(1deg);
+        }
+
+        .crayon-icon {
+            width: 28px;
+            height: 28px;
+            margin-bottom: 2px;
         }
 
         .thermometer-container {
@@ -251,8 +286,33 @@
             <div class="canvas-section">
                 <p class="hint-text">Write a Digit and let the AI guess it!</p>
                 <canvas id="canvas" width="28" height="28"></canvas>
-                <div class="controls">
-                    <button id="clear-btn">Clear Canvas</button>
+                <div class="control-panel">
+                    <button class="crayon-btn btn-pencil active-mode" id="btn-pencil" onclick="setMode('pencil')">
+                        <svg class="crayon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        pencil
+                    </button>
+                    <button class="crayon-btn btn-eraser" id="btn-eraser" onclick="setMode('eraser')">
+                        <svg class="crayon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20">
+                            </path>
+                            <path d="M17 14L7 14"></path>
+                        </svg>
+                        eraser
+                    </button>
+                    <button class="crayon-btn btn-clear" id="clear-btn">
+                        <svg class="crayon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"></path>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2">
+                            </path>
+                        </svg>
+                        clear
+                    </button>
                 </div>
             </div>
 
@@ -321,19 +381,39 @@
         const clearBtn = document.getElementById('clear-btn');
         const indicatorBall = document.getElementById('indicator-ball');
 
+        let currentMode = 'pencil';
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.crayon-btn').forEach(btn => btn.classList.remove('active-mode'));
+            if (document.getElementById('btn-' + mode)) {
+                document.getElementById('btn-' + mode).classList.add('active-mode');
+            }
+
+            if (mode === 'pencil') {
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1.5;
+                ctx.shadowBlur = 1.0;
+                ctx.shadowColor = 'white';
+            } else if (mode === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.strokeStyle = 'rgba(0,0,0,1)';
+                ctx.lineWidth = 3.0;
+                ctx.shadowBlur = 0;
+            }
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
         // Setup canvas function
         function clearCanvas() {
-            ctx.shadowBlur = 0; // Disable shadow for clearing
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.shadowBlur = 0;
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Re-enable soft brush settings
-            ctx.shadowBlur = 1.0;
-            ctx.shadowColor = 'white';
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 1.5;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+            setMode(currentMode);
         }
 
         clearCanvas();
@@ -378,9 +458,20 @@
             indicatorBall.style.bottom = '0%';
         });
 
+        function getCanvasBlob(callback) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.fillStyle = 'black';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0);
+            tempCanvas.toBlob(callback, 'image/png');
+        }
+
         // Live Prediction Polling
         setInterval(() => {
-            canvas.toBlob((blob) => {
+            getCanvasBlob((blob) => {
                 if (!blob) return;
 
                 const formData = new FormData();
